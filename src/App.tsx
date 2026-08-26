@@ -16,7 +16,7 @@ function CardDialog({ card, onClose }: { card: Card; onClose: () => void }) {
     document.addEventListener('keydown', escape)
     return () => { document.body.classList.remove('dialog-open'); document.removeEventListener('keydown', escape) }
   }, [onClose])
-  return <dialog ref={dialog} open aria-labelledby="dialog-title" onCancel={(event) => { event.preventDefault(); onClose() }} onClick={(event) => { if (event.target === dialog.current) onClose() }}>
+  return <dialog ref={dialog} aria-labelledby="dialog-title" onCancel={(event) => { event.preventDefault(); onClose() }} onClick={(event) => { if (event.target === dialog.current) onClose() }}>
     <button className="dialog-close" autoFocus onClick={onClose} aria-label="关闭详情">×</button>
     <p className="eyebrow">展开档案</p><h2 id="dialog-title">{card.title}</h2><p>{card.detail}</p>
     <ul className="tags">{card.meta.map((tag) => <li key={tag}>{tag}</li>)}</ul>
