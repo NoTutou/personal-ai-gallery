@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 beforeAll(() => {
@@ -16,8 +16,8 @@ describe('personal gallery', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: /你好，我是/ })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '教育经历' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '兴趣爱好' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'AI 笔记' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '兴趣爱好', hidden: true })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'AI 笔记', hidden: true })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '保持好奇' })).toBeInTheDocument()
   })
 
@@ -33,5 +33,25 @@ describe('personal gallery', () => {
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(card).toHaveFocus()
+  })
+
+  it('keeps section anchors and removes inactive scenes from the tab order', () => {
+    render(<App />)
+    expect(document.querySelector('#education')).toBeInTheDocument()
+    expect(document.querySelector('#hobbies')).toBeInTheDocument()
+    expect(document.querySelector('#ai-notes')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /查看 本科 · 示例大学/ })).not.toHaveAttribute('tabindex', '-1')
+    expect(screen.getByRole('button', { name: /查看 影像与观察/, hidden: true })).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('renders every section as ordinary interactive content with reduced motion', () => {
+    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)', media: query, onchange: null,
+      addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(),
+      removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }))
+    render(<App />)
+    expect(document.querySelector('.journey')).not.toHaveClass('journey--live')
+    expect(screen.getByRole('button', { name: /查看 影像与观察/ })).not.toHaveAttribute('tabindex', '-1')
   })
 })
