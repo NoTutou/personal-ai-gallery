@@ -166,8 +166,12 @@ a { color: inherit; }
 .corridor-lamp { fill: #f6d38a; stroke: var(--line); stroke-width: 2; }
 .corridor-window { fill: #e8f0f6; stroke: var(--line); stroke-width: 2; }
 .corridor-window__bar { stroke: var(--line); stroke-width: 1.5; }
-.corridor-window__hills { fill: none; stroke: #7a95a8; stroke-width: 1.8; stroke-linecap: round; }
-.corridor-window__sun { fill: #f6d38a; stroke: var(--line); stroke-width: 1.5; }
+.corridor-window__hills { fill: none; stroke: #7a95a8; stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 8 7; animation: hills-flow 7s linear infinite; }
+.corridor-window__sun { fill: #f6d38a; stroke: var(--line); stroke-width: 1.5; animation: sun-pulse 4s ease-in-out infinite; }
+.corridor-lamp-swing { transform-box: fill-box; transform-origin: top center; animation: lamp-swing 3.2s ease-in-out infinite; }
+@keyframes hills-flow { to { stroke-dashoffset: -60; } }
+@keyframes sun-pulse { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+@keyframes lamp-swing { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
 
 .corridor-door { cursor: pointer; }
 .corridor-door__panel {
@@ -361,6 +365,22 @@ a { color: inherit; }
 .footer-socials { display: flex; justify-content: center; flex-wrap: wrap; gap: 26px; margin-top: 28px; }
 .footer-socials a { font-family: var(--font-hand); font-size: 1.2rem; font-weight: 600; text-decoration: none; color: var(--pencil); }
 .footer-socials a:hover { color: var(--accent); }
+.footer-loop {
+  display: inline-block;
+  margin-top: 26px;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--pencil);
+  text-decoration: none;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 24px;
+  background: var(--paper-2);
+  transform: rotate(-1.2deg);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.footer-loop:hover { color: var(--accent); transform: rotate(1deg) translateY(-2px); }
 .footer-credit { font-size: 0.78rem; color: var(--faint); margin: 44px auto 0 !important; }
 
 /* ---------- 纸条弹窗 ---------- */
@@ -475,5 +495,6 @@ a { color: inherit; }
   [data-reveal] { opacity: 1; transform: none; transition: none; }
   .corridor { transition: none; }
   .hero-scroll span { animation: none; }
+  .corridor-lamp-swing, .corridor-window__sun, .corridor-window__hills { animation: none; }
   .card, .btn-sketch { transition: none; }
 }

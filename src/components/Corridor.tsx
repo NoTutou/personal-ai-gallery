@@ -81,9 +81,11 @@ function CorridorArt() {
     <line x1={600} y1={286} x2={600} y2={352} className="corridor-window__bar" />
     <path d="M546 331c9-8 18-8 27 0s18 8 27 0 18-8 27 0 18 8 27 0" className="corridor-window__hills" />
     <circle cx={637} cy={302} r={7} className="corridor-window__sun" />
-    <line x1={600} y1={FAR.top} x2={600} y2={FAR.top + 18} className="corridor-line" />
-    <circle cx={600} cy={FAR.top + 24} r={6.5} className="corridor-lamp" />
-    <path d={`M600 ${FAR.top + 35} l-4 6 M600 ${FAR.top + 35} l4 6`} className="corridor-line" />
+    <g className="corridor-lamp-swing">
+      <line x1={600} y1={FAR.top} x2={600} y2={FAR.top + 18} className="corridor-line" />
+      <circle cx={600} cy={FAR.top + 24} r={6.5} className="corridor-lamp" />
+      <path d={`M600 ${FAR.top + 35} l-4 6 M600 ${FAR.top + 35} l4 6`} className="corridor-line" />
+    </g>
   </g>
 }
 

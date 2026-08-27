@@ -173,6 +173,7 @@ export function SiteFooter() {
         {footer.socials.map((social) => <a key={social.label} href={social.href}
           target={social.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer">{social.label} ↗</a>)}
       </div>
+      <a className="footer-loop" href="#top">↺ 沿走廊走回起点</a>
       <p className="footer-credit">{footer.credit}</p>
     </div>
   </footer>
