@@ -490,6 +490,236 @@ a { color: inherit; }
   .faq-list { padding: 6px 20px; }
 }
 
+/* ============================================================
+   一镜到底行走走廊 · Walk Stage
+   ============================================================ */
+body.walk-mode { overflow: hidden; }
+
+.walk-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  background: var(--paper);
+  background-image: var(--noise);
+}
+.corridor-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.walk-wall { fill: rgba(255, 253, 248, 0.6); stroke: none; }
+.walk-wall--r { fill: rgba(240, 234, 220, 0.55); }
+.walk-skylight { fill: #fdf4d9; }
+.walk-frame {
+  fill: var(--paper-2);
+  stroke: #6b665a;
+  stroke-width: 2.2;
+}
+.walk-scribble { fill: var(--faint); font-family: var(--font-hand); text-anchor: middle; }
+.walk-hatch line { stroke: #8b8577; stroke-linecap: round; opacity: 0.6; }
+
+/* ---------- 门：素描底 → 靠近上色（颜料从左下洇开） ---------- */
+.wdoor.is-active { cursor: pointer; }
+.wdoor__panel {
+  fill: var(--paper-2);
+  stroke: var(--line);
+  stroke-width: 3;
+  transition: fill 0.25s ease;
+}
+.wdoor__gap {
+  fill: #2b2822;
+  transform-box: fill-box;
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: none;
+}
+.wdoor.hinge-right .wdoor__gap { transform-origin: right center; }
+.wdoor.is-opening .wdoor__gap { transform: scaleX(1); transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1); }
+.wdoor.is-opening .wdoor__panel,
+.wdoor.is-opening .wdoor__paint,
+.wdoor.is-opening .wdoor__inner,
+.wdoor.is-opening .wdoor__label,
+.wdoor.is-opening .wdoor__knob { opacity: 0; transition: opacity 0.45s ease 0.1s; }
+.wdoor__paint { fill-opacity: 0.85; }
+.wdoor__inner { fill: none; stroke: #6b665a; stroke-width: 1.5; }
+.wdoor__knob { fill: var(--line); transform-box: fill-box; transform-origin: center; }
+.wdoor.is-opening .wdoor__knob { animation: knob-spin 0.55s ease forwards; }
+@keyframes knob-spin { to { transform: rotate(160deg); } }
+.wdoor__label { fill: var(--ink); font-family: var(--font-hand); font-weight: 700; pointer-events: none; }
+.wdoor__sub { fill: var(--pencil); font-family: var(--font-hand); pointer-events: none; }
+.wdoor.is-active:hover .wdoor__label { fill: var(--accent); }
+
+.walk-signpost__board, .walk-signpost rect { rotate: -1deg; }
+.walk-signpost text { fill: var(--ink); }
+
+/* ---------- 提示与门牌 dock ---------- */
+/* ---------- 开场名牌 ---------- */
+.walk-intro {
+  position: absolute;
+  top: clamp(86px, 14vh, 130px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  width: min(92vw, 640px);
+  text-align: center;
+  padding: 26px 34px 22px;
+  background: radial-gradient(closest-side, rgba(250, 247, 240, 0.95), rgba(250, 247, 240, 0.8) 65%, transparent 100%);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.walk-intro.is-gone { opacity: 0; transform: translate(-50%, -26px); pointer-events: none; }
+.walk-intro .hero-title { font-size: clamp(2.4rem, 6vw, 4.2rem); }
+.walk-intro .hero-tagline { max-width: 420px; }
+
+.walk-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 88px;
+  transform: translateX(-50%);
+  z-index: 6;
+  margin: 0;
+  padding: 7px 16px;
+  background: rgba(250, 247, 240, 0.92);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  filter: drop-shadow(0 1px 0 rgba(47, 44, 38, 0.08));
+  font-family: var(--font-hand);
+  font-size: 1.02rem;
+  color: var(--pencil);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.walk-dock {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: min(94vw, 860px);
+}
+.door-chip {
+  position: relative;
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: 1.04rem;
+  line-height: 1.2;
+  padding: 7px 16px;
+  color: var(--ink);
+  background: var(--paper-2);
+  border: none;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 rgba(47, 44, 38, 0.14);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.door-chip::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2.5px solid var(--line);
+  border-radius: 11px 15px 10px 16px;
+  filter: url(#pencil-a);
+  transition: border-color 0.15s ease;
+  pointer-events: none;
+}
+.door-chip:hover { transform: translateY(-2px); box-shadow: 4px 5px 0 rgba(47, 44, 38, 0.18); }
+.door-chip:hover::before { border-color: var(--accent); }
+.door-chip:focus-visible { outline: 2px dashed var(--accent); outline-offset: 4px; }
+
+/* ---------- 房间浮层 ---------- */
+.room-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--paper);
+  background-image: var(--noise);
+  animation: room-rise 0.42s cubic-bezier(0.22, 0.9, 0.28, 1) both;
+}
+.room-overlay.is-closing { animation: room-sink 0.24s ease-in both; }
+@keyframes room-rise { from { transform: translateY(103%); } to { transform: translateY(0); } }
+@keyframes room-sink { from { transform: translateY(0); } to { transform: translateY(103%); } }
+.room-overlay__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px clamp(16px, 4vw, 40px);
+  border-bottom: 2px solid var(--line);
+  background: rgba(250, 247, 240, 0.92);
+  backdrop-filter: blur(5px);
+}
+.room-overlay__back {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.12rem;
+  color: var(--pencil);
+  background: var(--paper-2);
+  border: 2px solid var(--line);
+  border-radius: 10px 14px 9px 15px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.room-overlay__back:hover { color: var(--accent); border-color: var(--accent); transform: translateX(-3px); }
+.room-overlay__back:focus-visible { outline: 2px dashed var(--accent); outline-offset: 4px; }
+.room-overlay__title { font-family: var(--font-doodle); letter-spacing: 0.2em; color: var(--faint); }
+.room-overlay__body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 60px;
+}
+.room-overlay__body .room { padding-top: 64px; }
+.room-overlay__body > .room-body:last-child { max-width: 1100px; margin: 0 auto; }
+
+/* ---------- 海边终点站 ---------- */
+.endpoint-room.room-body { padding: 26px clamp(20px, 5vw, 48px) 40px; margin: 0 auto; max-width: 900px; text-align: center; }
+.beach-band { width: 100%; max-width: 880px; height: auto; display: block; margin: 18px auto 6px; }
+.beach-sea { fill: #dcebf5; stroke: var(--line); stroke-width: 2.5; }
+.beach-wave { stroke: #7a95a8; stroke-width: 2; stroke-linecap: round; animation: hills-flow 9s linear infinite; }
+.beach-wave--1 { animation-duration: 13s; opacity: 0.75; }
+.beach-wave--2 { animation-duration: 17s; opacity: 0.5; }
+.beach-sun { fill: #f6d38a; stroke: var(--line); stroke-width: 2; animation: sun-pulse 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.beach-gull path { stroke: var(--pencil); stroke-width: 2; stroke-linecap: round; }
+.beach-bottle { stroke: var(--blue); stroke-width: 2.2; stroke-linejoin: round; }
+.endpoint-float, .footer-socials .beach-float { display: inline-block; animation: float-bob 3.6s ease-in-out infinite; }
+@keyframes float-bob { 0%, 100% { transform: translateY(0) rotate(-0.6deg); } 50% { transform: translateY(-7px) rotate(0.8deg); } }
+.endpoint-faq { margin: 46px auto 0; max-width: 800px; text-align: left; }
+.endpoint-faq .section-head h2 { text-align: center; }
+.endpoint-faq .faq-list { padding: 10px 30px; }
+
+/* ---------- 行走模式下顶栏按钮化导航 ---------- */
+.site-nav__link {
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--pencil);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0 0 2px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.site-nav__link:hover { color: var(--accent); border-color: var(--accent); }
+.site-nav__link:focus-visible { outline: 2px dashed var(--accent); outline-offset: 3px; }
+
+@media (max-width: 900px) {
+  .walk-hint { bottom: 118px; font-size: 0.9rem; max-width: 88vw; white-space: normal; text-align: center; }
+  .walk-dock { gap: 8px; bottom: 14px; }
+  .door-chip { font-size: 0.95rem; padding: 8px 13px; }
+  .room-overlay__bar { gap: 12px; }
+  .endpoint-faq .faq-list { padding: 6px 20px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   [data-reveal] { opacity: 1; transform: none; transition: none; }
@@ -497,4 +727,7 @@ a { color: inherit; }
   .hero-scroll span { animation: none; }
   .corridor-lamp-swing, .corridor-window__sun, .corridor-window__hills { animation: none; }
   .card, .btn-sketch { transition: none; }
+  .room-overlay, .room-overlay.is-closing { animation: none; }
+  .footer-socials .beach-float, .beach-wave, .beach-sun { animation: none; }
+  .walk-hint { display: none; }
 }

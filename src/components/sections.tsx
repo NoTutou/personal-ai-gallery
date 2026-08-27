@@ -4,24 +4,51 @@ import { Doodle, Reveal, type DialogItem } from './sketch'
 
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`
 
-const NAV = [
-  { href: '#about', label: '关于我' },
-  { href: '#projects', label: '项目' },
-  { href: '#studio', label: '动态' },
-  { href: '#awards', label: '奖项' },
-  { href: '#faq', label: '问答' },
-]
+// 行走模式下的房间编号（contact 是走廊尽头的海边终点站）
+export type RoomId = 'about' | 'projects' | 'studio' | 'awards' | 'contact'
+export type NavTarget = RoomId | 'reset'
 
-export function SiteHeader() {
+const NAV: { id: RoomId; label: string }[] = [
+  { id: 'about', label: '关于我' },
+  { id: 'projects', label: '项目' },
+  { id: 'studio', label: '动态' },
+  { id: 'awards', label: '奖项' },
+]
+const NAV_FAQ_LABEL = '问答'
+
+export function SiteHeader({ onNavigate }: { onNavigate?: (target: NavTarget) => void }) {
   return <header className="site-header">
     <div className="site-header__inner">
-      <a className="brand" href="#top"><Doodle name="pen" className="brand__icon"/><span>{profile.name}</span></a>
+      <a className="brand" href="#top"
+        onClick={onNavigate ? (e) => { e.preventDefault(); onNavigate('reset') } : undefined}>
+        <Doodle name="pen" className="brand__icon"/><span>{profile.name}</span>
+      </a>
       <nav className="site-nav" aria-label="房间导航">
-        {NAV.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}
+        {onNavigate
+          ? <>{NAV.map((item) => <button key={item.id} type="button" className="site-nav__link"
+              onClick={() => onNavigate(item.id)}>{item.label}</button>)}
+            <button type="button" className="site-nav__link" onClick={() => onNavigate('contact')}>{NAV_FAQ_LABEL} / 联系</button></>
+          : <><a href="#about">关于我</a><a href="#projects">项目</a><a href="#studio">动态</a><a href="#awards">奖项</a><a href="#faq">问答</a></>}
       </nav>
-      <a className="btn-sketch btn-sketch--small site-header__cta" href={`mailto:${footer.email}`}>联系我</a>
+      {onNavigate
+        ? <button type="button" className="btn-sketch btn-sketch--small site-header__cta" onClick={() => onNavigate('contact')}>联系我</button>
+        : <a className="btn-sketch btn-sketch--small site-header__cta" href={`mailto:${footer.email}`}>联系我</a>}
     </div>
   </header>
+}
+
+export function FaqList({ heading }: { heading?: string }) {
+  return <>
+    {heading && <SectionHead index="05" eyebrow="FAQ · 上船前想问的" title={heading} />}
+    <Reveal className="faq-wrap">
+      <div className="sheet faq-list">
+        {faqs.map((faq) => <details key={faq.q} className="faq-item" name="endpoint-faq">
+          <summary><span className="faq-q">{faq.q}</span><span className="faq-marker" aria-hidden="true">＋</span></summary>
+          <p>{faq.a}</p>
+        </details>)}
+      </div>
+    </Reveal>
+  </>
 }
 
 export function SectionHead({ index, eyebrow, title, note }: { index: string; eyebrow: string; title: string; note?: string }) {
@@ -160,6 +187,34 @@ export function Faq() {
       </Reveal>
     </div>
   </section>
+}
+
+// 走廊尽头的海边终点站：联系 + 常见问题，进了这里就算“到达”
+export function EndpointRoom() {
+  return <div className="endpoint-room room-body">
+    <svg className="beach-band" viewBox="0 0 1200 190" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <circle cx={980} cy={62} r={34} className="beach-sun" />
+      <path d="M870 44c6-9 16-9 22 0M892 60c5-7 13-7 18 0M300 52c6-9 16-9 22 0" fill="none" className="beach-gull" />
+      <rect x={0} y={110} width={1200} height={80} className="beach-sea" />
+      {[118, 140, 162].map((y, i) => (
+        <path key={y} d={`M-40 ${y}q30 -12 60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0t60 0`}
+          fill="none" strokeDasharray="26 20" className={`beach-wave beach-wave--${i}`} />
+      ))}
+      <path d="M420 178l14-26 6 10 10-4z M430 150c2-5 8-5 10 0" fill="none" className="beach-bottle" />
+    </svg>
+    <Doodle name="pen" className="footer-pen" />
+    <h2>{footer.heading}</h2>
+    <p>{footer.text}</p>
+    <a className="btn-sketch btn-sketch--accent" href={`mailto:${footer.email}`}>{footer.email} ✉</a>
+    <div className="footer-socials">
+      {footer.socials.map((social) => <a key={social.label} className="beach-float" style={{ animationDelay: `${social.label.length * 0.31}s` }}
+        href={social.href} target={social.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer">{social.label} ↗</a>)}
+    </div>
+    <div className="endpoint-faq">
+      <FaqList heading="常见问题" />
+    </div>
+    <p className="footer-credit">{footer.credit}</p>
+  </div>
 }
 
 export function SiteFooter() {
