@@ -1,108 +1,163 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { content, type Card, type GallerySection } from './content'
-import ScrollExpand from './components/ScrollExpand'
-import GalleryWall from './components/GalleryWall'
-import { heroMedia } from './components/heroMedia'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Corridor from './components/Corridor'
+import Walk, { type WalkHandle } from './components/Walk'
+import {
+  About, awardCardItems, EndpointRoom, Faq, ItemSection,
+  projectItems, SiteHeader, SiteFooter, studioCardItems,
+  type CardItem, type NavTarget, type RoomId,
+} from './components/sections'
+import { PaperDialog, SketchDefs, useReveal, type DialogItem } from './components/sketch'
 
-const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`
-
-function Geometry({ scene }: { scene: string }) {
-  return <div className={`geometry geometry--${scene}`} aria-hidden="true"><i/><i/><i/></div>
-}
-
-function useReveal<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
+// 减少动态偏好时退回静态长页；偏好变化即时切换
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    if (typeof IntersectionObserver === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      el.classList.add('is-visible')
-      return
-    }
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        el.classList.add('is-visible')
-        io.disconnect()
-      }
-    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' })
-    io.observe(el)
-    return () => io.disconnect()
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const onChange = () => setReduced(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
   }, [])
-  return ref
+  return reduced
 }
 
-function CardDialog({ card, onClose }: { card: Card; onClose: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => {
-    dialog.current?.showModal?.()
-    document.body.classList.add('dialog-open')
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
-    document.addEventListener('keydown', escape)
-    return () => { document.body.classList.remove('dialog-open'); document.removeEventListener('keydown', escape) }
-  }, [onClose])
-  return <dialog ref={dialog} aria-labelledby="dialog-title" onCancel={(event) => { event.preventDefault(); onClose() }} onClick={(event) => { if (event.target === dialog.current) onClose() }}>
-    <button className="dialog-close" autoFocus onClick={onClose} aria-label="关闭详情">×</button>
-    <p className="eyebrow">展开档案</p><h2 id="dialog-title">{card.title}</h2><p>{card.detail}</p>
-    <ul className="tags">{card.meta.map((tag) => <li key={tag}>{tag}</li>)}</ul>
-  </dialog>
-}
-
-function GalleryCard({ card, index, onOpen }: { card: Card; index: number; onOpen: (button: HTMLButtonElement) => void }) {
-  return <article className="card" style={{ '--i': index } as CSSProperties}>
-    {card.image && <img src={asset(card.image)} alt="" loading="lazy"/>}
-    <div><p className="card-index">{card.id}</p><h3>{card.title}</h3><p>{card.summary}</p></div>
-    <button onClick={(event) => onOpen(event.currentTarget)} aria-label={`查看 ${card.title} 详情`}>查看详情 <span aria-hidden="true">↗</span></button>
-  </article>
-}
-
-function GallerySectionView({ section, index, onSelect }: { section: GallerySection; index: number; onSelect: (card: Card, button: HTMLButtonElement) => void }) {
-  return <GalleryWall id={section.id} index={index} art={<Geometry scene={section.scene}/>}>
-    <header className="painting-head">
-      <p className="eyebrow">{section.eyebrow}</p>
-      <h2>{section.title}</h2>
-    </header>
-    <div className="cards">{section.cards.map((card, cardIndex) => <GalleryCard key={card.id} card={card} index={cardIndex} onOpen={(button) => onSelect(card, button)}/>)}</div>
-  </GalleryWall>
+const ROOM_TITLES: Record<RoomId, string> = {
+  about: '关于我',
+  projects: '项目作品',
+  studio: '工作室动态',
+  awards: '奖项与证书',
+  contact: '海边终点 · 联系',
 }
 
 export default function App() {
-  const [selected, setSelected] = useState<Card | null>(null)
+  const reduced = usePrefersReducedMotion()
+  return <>
+    <SketchDefs />
+    {reduced ? <StaticSite /> : <WalkExperience />}
+  </>
+}
+
+/* ---------- 静态回退版（prefers-reduced-motion） ---------- */
+function StaticSite() {
+  const [selected, setSelected] = useState<DialogItem | null>(null)
   const opener = useRef<HTMLButtonElement | null>(null)
-  const outro = useReveal<HTMLDivElement>()
   const close = () => { setSelected(null); queueMicrotask(() => opener.current?.focus()) }
-  const open = (card: Card, button: HTMLButtonElement) => { opener.current = button; setSelected(card) }
+  const open = (item: CardItem, button: HTMLButtonElement) => { opener.current = button; setSelected(item.dialog) }
+  const outro = useReveal<HTMLDivElement>()
 
   return <>
-    <header className="site-header"><div className="container header-inner">
-      <a className="brand" href="#intro">{content.site.displayName}</a>
-      <nav aria-label="章节导航">{content.sections.map((section) => <a key={section.id} href={`#${section.id}`}>{section.title}</a>)}</nav>
-    </div></header>
+    <SiteHeader />
     <main>
-      <ScrollExpand
-        id="intro"
-        className="hero"
-        src={heroMedia}
-        alt="克莱因蓝几何构成"
-        title={<h1>你好，我是<br/><em>{content.site.displayName}</em></h1>}
-        scrollHint="滚动展开"
-        startWidth={56}
-        startHeight={62}
-        startRadius={32}
-        endRadius={0}
-        mediaZoom={1.28}
-        scrollDistance={1.15}
-        holdDistance={0.3}
-        smoothing={0.09}
-        overlayScrim={0.55}
-        useWindowScroll
-      >
-        <p className="eyebrow">Personal archive / 2026</p>
-        <p className="hero-lede">{content.site.intro}</p>
-        <a className="hero-cta" href="#education">开始探索 <span aria-hidden="true">↓</span></a>
-      </ScrollExpand>
-      {content.sections.map((section, index) => <GallerySectionView key={section.id} section={section} index={index} onSelect={open}/>)}
-      <section id="outro" className="outro"><div className="container"><Geometry scene="resolve"/><div ref={outro} className="outro-content" data-reveal><p className="eyebrow">04 / Continue</p><h2>{content.site.closing}</h2><p>{content.site.closingText}</p><div className="contacts">{content.contacts.map((contact) => <a key={contact.label} href={contact.href}>{contact.label} ↗</a>)}</div></div></div></section>
+      <Corridor />
+      <About />
+      <ItemSection id="projects" index="02" eyebrow="Projects · 项目作品" title="项目作品"
+        note="四个手绘画框等着换成你的作品 —— 在 src/content.ts 里填标题、介绍和外链。"
+        items={projectItems()} onOpen={open} />
+      <ItemSection id="studio" index="03" eyebrow="The Studio · 工作室动态" title="工作室动态"
+        note="文章、视频、社交动态都挂在这面墙上。"
+        items={studioCardItems()} onOpen={open} />
+      <ItemSection id="awards" index="04" eyebrow="Awards · 奖项与证书" title="奖项与证书"
+        items={awardCardItems()} onOpen={open} />
+      <Faq />
+      <div ref={outro} className="outro" data-reveal="">
+        <p aria-hidden="true" className="outro-dash">· · ·</p>
+      </div>
     </main>
-    {selected && <CardDialog card={selected} onClose={close}/>}<footer><div className="container footer-inner"><span>© 2026 · {content.site.displayName}</span><span>Edit content in src/content.ts</span></div></footer>
+    <SiteFooter />
+    {selected && <PaperDialog item={selected} onClose={close} />}
+  </>
+}
+
+/* ---------- 行走体验版：一镜到底走廊 + 全屏房间 ---------- */
+function WalkExperience() {
+  const [room, setRoom] = useState<RoomId | null>(null)
+  const [closing, setClosing] = useState(false)
+  const [dialog, setDialog] = useState<DialogItem | null>(null)
+  const opener = useRef<HTMLButtonElement | null>(null)
+  const walkApi = useRef<WalkHandle | null>(null)
+
+  useEffect(() => {
+    document.body.classList.add('walk-mode')
+    return () => document.body.classList.remove('walk-mode')
+  }, [])
+
+  const closeDialog = useCallback(() => {
+    setDialog(null)
+    queueMicrotask(() => opener.current?.focus())
+  }, [])
+  const openCard = useCallback((item: CardItem, button: HTMLButtonElement) => {
+    opener.current = button
+    setDialog(item.dialog)
+  }, [])
+
+  const enterRoom = useCallback((id: RoomId) => setRoom(id), [])
+
+  const leaveRoom = useCallback((id: RoomId) => {
+    setClosing(true)
+    window.setTimeout(() => {
+      setRoom(null)
+      setClosing(false)
+      queueMicrotask(() => {
+        (document.querySelector(`.walk-dock [data-room="${id}"]`) as HTMLElement | null)?.focus()
+      })
+    }, 230)
+  }, [])
+  const leaveRoomRef = useRef((id: RoomId) => {})
+  useEffect(() => { leaveRoomRef.current = leaveRoom }, [leaveRoom])
+
+  const navigate = useCallback((target: NavTarget) => {
+    const api = walkApi.current
+    if (!api) return
+    if (target === 'reset') api.resetToStart()
+    else if (!room) api.enterRoom(target)
+  }, [room])
+
+  useEffect(() => {
+    if (!room || closing) return
+    const onKey = (e: KeyboardEvent) => {
+      // 详情纸条弹窗打开时由它自己处理 ESC，别把房间一起关了
+      if (document.body.classList.contains('dialog-open')) return
+      if (e.key === 'Escape') leaveRoomRef.current(room)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [room, closing])
+
+  return <>
+    <SiteHeader onNavigate={navigate} />
+    <Walk paused={!!room || !!dialog || closing} onEnter={enterRoom}
+      onReady={(api) => { walkApi.current = api }} />
+
+    {room && (
+      <section className={`room-overlay${closing ? ' is-closing' : ''}`} aria-label={ROOM_TITLES[room]}>
+        <header className="room-overlay__bar">
+          <button type="button" className="room-overlay__back" autoFocus onClick={() => leaveRoom(room)}>
+            ← 回到走廊原位
+          </button>
+          <strong className="room-overlay__title">{ROOM_TITLES[room]}</strong>
+        </header>
+        <div className="room-overlay__body">
+          {room === 'about' && <About />}
+          {room === 'projects' && (
+            <ItemSection id="projects-walk" index="02" eyebrow="Projects · 项目作品" title="项目作品"
+              note="四个手绘画框等着换成你的作品 —— 在 src/content.ts 里填标题、介绍和外链。"
+              items={projectItems()} onOpen={openCard} />
+          )}
+          {room === 'studio' && (
+            <ItemSection id="studio-walk" index="03" eyebrow="The Studio · 工作室动态" title="工作室动态"
+              note="文章、视频、社交动态都挂在这面墙上。"
+              items={studioCardItems()} onOpen={openCard} />
+          )}
+          {room === 'awards' && (
+            <ItemSection id="awards-walk" index="04" eyebrow="Awards · 奖项与证书" title="奖项与证书"
+              items={awardCardItems()} onOpen={openCard} />
+          )}
+          {room === 'contact' && <EndpointRoom />}
+        </div>
+      </section>
+    )}
+
+    {dialog && <PaperDialog item={dialog} onClose={closeDialog} />}
   </>
 }
