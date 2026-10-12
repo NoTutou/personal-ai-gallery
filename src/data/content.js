@@ -207,9 +207,11 @@ export const rooms = [
 export const CORRIDOR = {
   width: 5,
   height: 3.6,
-  backZ: 4, // wall behind the starting point
-  endWallZ: -56, // wall at the far end
-  startZ: 2, // first camera position
-  endZ: -51, // furthest the camera can walk
+  length: 56, // one lap; the corridor repeats every `length` metres
+  introZ: 3.2, // where you stand in front of the closed entrance door
+  entryZ: -1.8, // where you stop after stepping through it
   eye: 1.6,
 }
+
+// the entrance door at the start of every lap
+export const entrance = { id: 'entrance', label: 'Come in', color: '#f7d774' }

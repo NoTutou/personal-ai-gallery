@@ -10,7 +10,7 @@ export const ACHIEVEMENTS = [
   { id: 'curator', title: 'Curator', text: 'Inspect a project in the gallery.', icon: '🖼️' },
   { id: 'cartographer', title: 'Cartographer', text: 'Open the hand-drawn map.', icon: '🗺️' },
   { id: 'sound-engineer', title: 'Sound Engineer', text: 'Tweak the audio settings.', icon: '🎚️' },
-  { id: 'end-of-line', title: 'End of the Line', text: 'Walk to the very end of the corridor.', icon: '🏁' },
+  { id: 'end-of-line', title: 'Full Circle', text: 'Walk a whole lap and end up back at the start.', icon: '🔁' },
   { id: 'say-hi', title: 'Say Hi', text: 'Click one of the contact links.', icon: '✉️' },
 ]
 
@@ -35,6 +35,7 @@ let toastId = 0
 export const useStore = create((set, get) => ({
   // 'loading' | 'ready' | 'intro' | 'corridor' | 'cinematic' | 'room'
   phase: 'loading',
+  entered: false, // has the entrance door been opened this visit
   progress: 0,
   room: null,
   hoveredDoor: null,
@@ -115,9 +116,8 @@ export const useStore = create((set, get) => ({
 // Mutable per-frame state (kept out of React to avoid re-renders)
 // ---------------------------------------------------------------------------
 export const nav = {
-  target: CORRIDOR.startZ, // where scroll wants the camera to be
-  velocity: 0,
-  mouseX: 0,
+  target: CORRIDOR.introZ, // where scroll wants the camera to be
+  mouseX: 0, // -1..1 look direction (pointer position, or touch drag)
   mouseY: 0,
 }
 
@@ -126,12 +126,25 @@ export const nav = {
 export const view = {
   x: 0,
   y: CORRIDOR.eye,
-  z: CORRIDOR.startZ,
+  z: CORRIDOR.introZ,
   yaw: 0,
   pitch: 0,
 }
 
-// door opening amount (0..1) per room id – tweened by the director
-export const doors = Object.fromEntries(rooms.map((r) => [r.id, 0]))
+// door opening amount (0..1) per room id (+ the entrance) – tweened by the director
+export const doors = Object.fromEntries([...rooms.map((r) => [r.id, 0]), ['entrance', 0]])
 
-export const progressOf = (z) => (CORRIDOR.startZ - z) / (CORRIDOR.startZ - CORRIDOR.endZ)
+// Door portal: while a door is opening/closing, the room behind it is shown
+// through the gap. The canvas computes the gap's screen polygon each frame.
+export const portal = { active: false, id: null, z: 0, points: null, full: false }
+
+// ---------------------------------------------------------------------------
+// Looping corridor helpers (the corridor repeats every CORRIDOR.length metres)
+// ---------------------------------------------------------------------------
+const L = CORRIDOR.length
+/** the copy of z (in some lap) closest to `near` */
+export const loopZ = (z, near) => z + L * Math.round((near - z) / L)
+/** distance between a and b along the looping corridor */
+export const loopDist = (a, b) => Math.abs(a - loopZ(b, a))
+/** 0..1 position within the current lap */
+export const progressOf = (z) => ((((-z) % L) + L) % L) / L

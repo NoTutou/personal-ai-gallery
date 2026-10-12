@@ -65,7 +65,7 @@ export default function Preloader() {
     sound.setVolumes(s.volumes)
     sound.setEnabled(s.soundOn)
     sound.tear()
-    s.set({ phase: 'corridor' })
+    s.set({ phase: s.entered ? 'corridor' : 'intro' })
     const tl = gsap.timeline({ onComplete: () => setGone(true) })
     tl.to(overlay.current, { autoAlpha: 0, y: -20, duration: 0.35, ease: 'power2.in' })
       .to(left.current, { xPercent: -8, rotate: -1.5, duration: 0.25, ease: 'power1.out' }, 0.3)

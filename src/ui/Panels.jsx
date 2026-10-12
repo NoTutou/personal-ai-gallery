@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { useStore, view, ACHIEVEMENTS } from '../store'
+import { useStore, view, ACHIEVEMENTS, progressOf } from '../store'
 import { rooms, CORRIDOR } from '../data/content'
 import { travelTo, walkTo } from '../director'
 import { rng } from '../lib/sketch'
@@ -27,7 +27,7 @@ function PanelShell({ id, title, children, className = '' }) {
 // Map
 // ---------------------------------------------------------------------------
 const MAP_W = 600
-const zToX = (z) => 40 + ((CORRIDOR.backZ - z) / (CORRIDOR.backZ - CORRIDOR.endWallZ)) * (MAP_W - 80)
+const zToX = (z) => 40 + progressOf(z) * (MAP_W - 80)
 
 function roughPath(pts, seed, close = true) {
   const r = rng(seed)
@@ -121,10 +121,10 @@ function MapPanel() {
             </g>
           ))}
           <text x={MAP_W - 44} y={shapes.bottom + 26} className="map-note" textAnchor="end">
-            the end →
+            ↻ back to the start
           </text>
           <text x={44} y={shapes.bottom + 26} className="map-note">
-            ← start
+            entrance →
           </text>
           <g ref={pin} className="pin-marker">
             <g transform="scale(0.9)">
@@ -133,15 +133,15 @@ function MapPanel() {
           </g>
         </svg>
       </div>
-      <p className="paper-panel__foot">click a room to walk there · you are the pin</p>
+      <p className="paper-panel__foot">click a room to walk there · the corridor loops forever · you are the pin</p>
       <div className="map-quick">
-        <button className="sketch-btn sketch-btn--small" onClick={() => walkTo(CORRIDOR.startZ)}>
+        <button className="sketch-btn sketch-btn--small" onClick={() => walkTo(CORRIDOR.entryZ)}>
           <SketchBox seed={41} />
           <span>to the start</span>
         </button>
-        <button className="sketch-btn sketch-btn--small" onClick={() => walkTo(CORRIDOR.endZ)}>
+        <button className="sketch-btn sketch-btn--small" onClick={() => walkTo(CORRIDOR.entryZ - CORRIDOR.length + 5)}>
           <SketchBox seed={42} />
-          <span>to the end</span>
+          <span>end of the lap</span>
         </button>
       </div>
     </PanelShell>

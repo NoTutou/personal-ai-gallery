@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useStore, view, progressOf } from '../store'
-import { site, rooms, CORRIDOR } from '../data/content'
+import { site, rooms, CORRIDOR, entrance } from '../data/content'
 import { exitRoom, walkTo } from '../director'
 import { SketchBox, IconMap, IconSound, IconMute, IconTrophy, tornClip } from './sketchy'
 import { sound } from '../lib/audio'
@@ -12,7 +12,7 @@ function Logo() {
     const s = useStore.getState()
     sound.click()
     if (s.phase === 'room') exitRoom()
-    else if (s.phase === 'corridor') walkTo(CORRIDOR.startZ)
+    else if (s.phase === 'corridor') walkTo(CORRIDOR.entryZ)
   }
   return (
     <button className="logo" onClick={onClick} aria-label="Back to start">
@@ -75,6 +75,9 @@ function Hints() {
         <svg className="scroll-hint__arrow" viewBox="0 0 24 40" aria-hidden="true">
           <path d="M12 3 Q11 18 12.4 35 M5 27 L12.3 35.5 L19.2 26.6" />
         </svg>
+      </div>
+      <div className={`corridor-hint ${phase === 'intro' ? '' : 'hiding'}`}>
+        {isTouch ? 'tap the door to' : 'click the door to'} <b style={{ '--c': entrance.color }}>come in</b>
       </div>
       <div className={`corridor-hint ${inCorridor && hasWalked && door ? '' : 'hiding'}`}>
         {door && (

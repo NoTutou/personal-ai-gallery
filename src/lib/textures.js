@@ -4,7 +4,7 @@
 import * as THREE from 'three'
 import { rng, makeCanvas, paper, line, rect, circle, hatch, smudge, wash, handText, hexA, INK, PAPER } from './sketch'
 import { renderArt } from './art'
-import { rooms, projects, corridorArt, site } from '../data/content'
+import { rooms, projects, corridorArt, site, entrance, CORRIDOR } from '../data/content'
 
 const store = new Map()
 
@@ -136,7 +136,7 @@ function ceilingCanvas(seed) {
 // Plane size 1.8m x 3.3m. Opening is 1.2m x 2.3m from the bottom.
 export const DOOR = { casingW: 1.8, casingH: 3.3, leafW: 1.2, leafH: 2.3 }
 
-function casingCanvas(room, mode) {
+function casingCanvas(room, mode, { hole = false } = {}) {
   const w = 544, h = 998 // ~302px per metre
   const m = w / DOOR.casingW
   const c = makeCanvas(w, h)
@@ -155,8 +155,10 @@ function casingCanvas(room, mode) {
   if (mode === 'color') wash(x, rng(seed + 5), (p) => p.rect(ox - 34, oy - 34, ow + 68, oh + 34), '#c9a27a', { alpha: 0.35 })
   else hatch(x, rng(seed + 5), (p) => p.rect(ox - 34, oy - 34, ow + 68, oh + 34), [ox - 34, oy - 34, ow + 68, oh + 34], { spacing: 7, alpha: 0.2, angle: -1.3 })
 
-  // opening
-  if (mode === 'color') {
+  // opening (a real hole for the entrance, so you can see the corridor through it)
+  if (hole) {
+    x.clearRect(ox, oy, ow, oh)
+  } else if (mode === 'color') {
     const g = x.createLinearGradient(0, oy, 0, h)
     g.addColorStop(0, room.color)
     g.addColorStop(1, '#fff8e6')
@@ -528,7 +530,7 @@ export function prepareAssets(onProgress = () => {}) {
     const jobs = []
     const add = (key, fn, opts) => jobs.push(() => store.set(key, toTexture(fn(), opts)))
 
-    add('wall', () => wallCanvas(7), { repeat: [15, 1] })
+    add('wall', () => wallCanvas(7), { repeat: [CORRIDOR.length / 4, 1] })
     add('floor', () => floorCanvas(13), { repeat: [1, 12] })
     add('ceiling', () => ceilingCanvas(19), { repeat: [1, 12] })
     add('endwall:sketch', () => endWallCanvas('sketch'))
@@ -543,6 +545,10 @@ export function prepareAssets(onProgress = () => {}) {
     add('roundwall', roundWallCanvas, { repeat: [2, 1] })
     add('roundfloor', roundFloorCanvas)
     for (let i = 0; i < 3; i++) add(`frame:${i}`, () => frameBorderCanvas(300 + i))
+    add('casing:entrance:sketch', () => casingCanvas(entrance, 'sketch', { hole: true }))
+    add('casing:entrance:color', () => casingCanvas(entrance, 'color', { hole: true }))
+    add('leaf:entrance:sketch', () => leafCanvas(entrance, 'sketch'))
+    add('leaf:entrance:color', () => leafCanvas(entrance, 'color'))
     for (const room of rooms) {
       add(`casing:${room.id}:sketch`, () => casingCanvas(room, 'sketch'))
       add(`casing:${room.id}:color`, () => casingCanvas(room, 'color'))
